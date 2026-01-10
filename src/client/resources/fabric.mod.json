@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "cnbt",
+	"version": "${version}",
+	"name": "ClientNBTCommand",
+	"description": "Small Client side mod to retrieve data on the client side",
+	"authors": [
+		"Grauly"
+	],
+	"contact": {
+		"homepage": "https://github.com/Grauly/ClientNBTCommand/",
+		"sources": "https://github.com/Grauly/ClientNBTCommand/"
+	},
+	"license": "MIT",
+	"icon": "assets/cnbt/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"grauly.cnbt.ClientNBTCommandClient"
+		]
+	},
+	"mixins": [
+		"cnbt.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.10",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
