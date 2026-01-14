@@ -1,13 +1,14 @@
 {
-	"required": true,
-	"package": "grauly.cnbt.mixin",
-	"compatibilityLevel": "JAVA_21",
-	"mixins": [
-	],
-	"injectors": {
-		"defaultRequire": 1
-	},
-	"overwrites": {
-		"requireAnnotations": true
+  "required": true,
+  "package": "grauly.cnbt.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EntitySelectorAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
 	}
 }
