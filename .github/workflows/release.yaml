@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseDescription:
+        description: 'Release Text'
+        required: true
+        type: string
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # for later tag existence checks
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+
+      - name: Retrieve Version
+        id: get-version
+        run: ./.github/scripts/get_version.sh
+
+      - name: Ensure Tag/Version does not already exist
+        run: ./.github/scripts/check_tags.sh "${{ steps.get-version.outputs.version }}"
+
+      - name: Build
+        run: ./gradlew build
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: "${{ inputs.releaseDescription }}"
+          tag_name: "${{ steps.get-version.outputs.version }}"
+          name: "${{ steps.get-version.outputs.display_version }}"
+          make_latest: true
+          files: |
+            build/libs/*
