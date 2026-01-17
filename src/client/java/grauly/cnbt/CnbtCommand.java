@@ -21,6 +21,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.commands.data.BlockDataAccessor;
+import net.minecraft.server.commands.data.EntityDataAccessor;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -58,7 +59,8 @@ public class CnbtCommand {
         literal.then(ClientCommandManager.literal("entity").then(ClientCommandManager.argument("entity", EntityArgument.entity()).executes(context -> {
             EntitySelector entitySelector = context.getArgument("entity", EntitySelector.class);
             Entity entity = resolveEntitySelector(entitySelector, context);
-            context.getSource().sendFeedback(Component.literal("entity: " + entity));
+            EntityDataAccessor entityDataAccessor = new EntityDataAccessor(entity);
+            context.getSource().sendFeedback(entityDataAccessor.getPrintSuccess(entityDataAccessor.getData()));
             return 1;
         })));
 
@@ -95,7 +97,7 @@ public class CnbtCommand {
         } else if (entitySelectorAccessor.getUUID() != null) {
             Entity entity = context.getSource().getWorld().getEntity(entitySelectorAccessor.getUUID());
             if (entity == null) return List.of();
-            if (entity.getType().isEnabled(context.getSource().enabledFeatures())) return List.of();
+            if (!entity.getType().isEnabled(context.getSource().enabledFeatures())) return List.of();
             return List.of(entity);
         } else {
             Vec3 selectorPosition = entitySelectorAccessor.getPosition().apply(context.getSource().getPosition());
