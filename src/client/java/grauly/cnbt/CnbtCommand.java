@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import grauly.cnbt.mixin.EntitySelectorAccessor;
+import grauly.cnbt.access.NonAabbEntityGetter;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.Util;
@@ -111,7 +112,11 @@ public class CnbtCommand {
             int maxResults = getMaxResults(entitySelector);
             // omit world limiting check, we are always limited to that
             ArrayList<Entity> list = new ArrayList<>();
-            context.getSource().getWorld().getEntities(entitySelectorAccessor.getType(), aabb, predicate, list, maxResults);
+            if (aabb != null) {
+                context.getSource().getWorld().getEntities(entitySelectorAccessor.getType(), aabb, predicate, list, maxResults);
+            } else {
+                ((NonAabbEntityGetter) context.getSource().getWorld()).cnbt$getEntities(entitySelectorAccessor.getType(), predicate, list, maxResults);
+            }
             return sortAndLimit(selectorPosition, list, entitySelector);
         }
     }
