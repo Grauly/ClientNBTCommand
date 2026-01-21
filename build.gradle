@@ -40,7 +40,7 @@ dependencies {
 	
 }
 
-processResources {
+processClientResources {
 	inputs.property "version", project.version
 
 	filesMatching("fabric.mod.json") {
