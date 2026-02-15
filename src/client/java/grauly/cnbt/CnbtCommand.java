@@ -7,7 +7,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import grauly.cnbt.mixin.EntitySelectorAccessor;
 import grauly.cnbt.access.NonAabbEntityGetter;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
@@ -42,13 +42,13 @@ import java.util.function.Predicate;
 
 public class CnbtCommand {
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
-        LiteralArgumentBuilder<FabricClientCommandSource> literal = ClientCommandManager.literal("cnbt");
+        LiteralArgumentBuilder<FabricClientCommandSource> literal = ClientCommands.literal("cnbt");
 
-        literal.then(ClientCommandManager.literal("block").then(ClientCommandManager.argument("pos", BlockPosArgument.blockPos()).executes(context -> {
+        literal.then(ClientCommands.literal("block").then(ClientCommands.argument("pos", BlockPosArgument.blockPos()).executes(context -> {
             WorldCoordinates coords = context.getArgument("pos", WorldCoordinates.class);
             Vec3 pos = convertWorldCoordinates(coords, context.getSource().getPosition());
             BlockPos blockPos = BlockPos.containing(pos);
-            BlockEntity entity = context.getSource().getWorld().getBlockEntity(blockPos);
+            BlockEntity entity = context.getSource().getLevel().getBlockEntity(blockPos);
             if (entity == null) {
                 throw new SimpleCommandExceptionType(Component.translatable("commands.data.block.invalid")).create();
             }
@@ -57,7 +57,7 @@ public class CnbtCommand {
             return 1;
         })));
 
-        literal.then(ClientCommandManager.literal("entity").then(ClientCommandManager.argument("entity", EntityArgument.entity()).executes(context -> {
+        literal.then(ClientCommands.literal("entity").then(ClientCommands.argument("entity", EntityArgument.entity()).executes(context -> {
             EntitySelector entitySelector = context.getArgument("entity", EntitySelector.class);
             Entity entity = resolveEntitySelector(entitySelector, context);
             EntityDataAccessor entityDataAccessor = new EntityDataAccessor(entity);
@@ -65,7 +65,7 @@ public class CnbtCommand {
             return 1;
         })));
 
-        literal.then(ClientCommandManager.literal("hand").executes(context -> {
+        literal.then(ClientCommands.literal("hand").executes(context -> {
             ItemStack stack = context.getSource().getPlayer().getMainHandItem();
             TagValueOutput tagValueOutput = TagValueOutput.createWithoutContext(new ProblemReporter.ScopedCollector(ClientNBTCommandClient.LOGGER));
             tagValueOutput.store("components", DataComponentMap.CODEC, stack.getComponents());
@@ -93,10 +93,10 @@ public class CnbtCommand {
         if (!entitySelector.includesEntities()) {
             return resolvePlayers(entitySelector, context);
         } else if (entitySelectorAccessor.getPlayerName() != null) {
-            Optional<AbstractClientPlayer> optionalPlayer = context.getSource().getWorld().players().stream().filter(player -> player.getName().toString().equals(entitySelectorAccessor.getPlayerName())).findFirst();
+            Optional<AbstractClientPlayer> optionalPlayer = context.getSource().getLevel().players().stream().filter(player -> player.getName().toString().equals(entitySelectorAccessor.getPlayerName())).findFirst();
             return optionalPlayer.isPresent() ? List.of(optionalPlayer.get()) : List.of();
         } else if (entitySelectorAccessor.getUUID() != null) {
-            Entity entity = context.getSource().getWorld().getEntity(entitySelectorAccessor.getUUID());
+            Entity entity = context.getSource().getLevel().getEntity(entitySelectorAccessor.getUUID());
             if (entity == null) return List.of();
             if (!entity.getType().isEnabled(context.getSource().enabledFeatures())) return List.of();
             return List.of(entity);
@@ -113,9 +113,9 @@ public class CnbtCommand {
             // omit world limiting check, we are always limited to that
             ArrayList<Entity> list = new ArrayList<>();
             if (aabb != null) {
-                context.getSource().getWorld().getEntities(entitySelectorAccessor.getType(), aabb, predicate, list, maxResults);
+                context.getSource().getLevel().getEntities(entitySelectorAccessor.getType(), aabb, predicate, list, maxResults);
             } else {
-                ((NonAabbEntityGetter) context.getSource().getWorld()).cnbt$getEntities(entitySelectorAccessor.getType(), predicate, list, maxResults);
+                ((NonAabbEntityGetter) context.getSource().getLevel()).cnbt$getEntities(entitySelectorAccessor.getType(), predicate, list, maxResults);
             }
             return sortAndLimit(selectorPosition, list, entitySelector);
         }
@@ -124,10 +124,10 @@ public class CnbtCommand {
     private static List<? extends Player> resolvePlayers(EntitySelector entitySelector, CommandContext<FabricClientCommandSource> context) {
         EntitySelectorAccessor entitySelectorAccessor = (EntitySelectorAccessor) entitySelector;
         if (entitySelectorAccessor.getPlayerName() != null) {
-            Optional<AbstractClientPlayer> optionalPlayer = context.getSource().getWorld().players().stream().filter(player -> player.getName().toString().equals(entitySelectorAccessor.getPlayerName())).findFirst();
+            Optional<AbstractClientPlayer> optionalPlayer = context.getSource().getLevel().players().stream().filter(player -> player.getName().toString().equals(entitySelectorAccessor.getPlayerName())).findFirst();
             return optionalPlayer.isPresent() ? List.of(optionalPlayer.get()) : List.of();
         } else if (entitySelectorAccessor.getUUID() != null) {
-            Player player = context.getSource().getWorld().getPlayerByUUID(entitySelectorAccessor.getUUID());
+            Player player = context.getSource().getLevel().getPlayerByUUID(entitySelectorAccessor.getUUID());
             return player != null ? List.of(player) : List.of();
         } else {
             Vec3 selectorPosition = entitySelectorAccessor.getPosition().apply(context.getSource().getPosition());
@@ -140,7 +140,7 @@ public class CnbtCommand {
             }
             int maxResults = getMaxResults(entitySelector);
             // omit world limiting check, we are always limited to that
-            return sortAndLimit(selectorPosition, context.getSource().getWorld().players().stream().filter(predicate).limit(maxResults).toList(), entitySelector);
+            return sortAndLimit(selectorPosition, context.getSource().getLevel().players().stream().filter(predicate).limit(maxResults).toList(), entitySelector);
         }
     }
 
